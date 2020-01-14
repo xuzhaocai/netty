@@ -29,11 +29,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  * the same time.
  */
 public abstract class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
-
+    /**
+     * EventExecutor执行器数组
+     */
     private final EventExecutor[] children;
+
+    //只读EventExecutor集合
     private final Set<EventExecutor> readonlyChildren;
+
+    //已终止ExentExecutor数量
     private final AtomicInteger terminatedChildren = new AtomicInteger();
+    //用于终止的Future
     private final Promise<?> terminationFuture = new DefaultPromise(GlobalEventExecutor.INSTANCE);
+    // EventExecutor 选择器
     private final EventExecutorChooserFactory.EventExecutorChooser chooser;
 
     /**
@@ -55,6 +63,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      * @param args              arguments which will passed to each {@link #newChild(Executor, Object...)} call
      */
     protected MultithreadEventExecutorGroup(int nThreads, Executor executor, Object... args) {
+        // 指定EventExecutor选择器
         this(nThreads, executor, DefaultEventExecutorChooserFactory.INSTANCE, args);
     }
 

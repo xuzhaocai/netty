@@ -37,7 +37,7 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
 
     /**
      * Shortcut method for {@link #shutdownGracefully(long, long, TimeUnit)} with sensible default values.
-     *
+     * 优雅停机
      * @return the {@link #terminationFuture()}
      */
     Future<?> shutdownGracefully();
@@ -48,7 +48,7 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
      * Unlike {@link #shutdown()}, graceful shutdown ensures that no tasks are submitted for <i>'the quiet period'</i>
      * (usually a couple seconds) before it shuts itself down.  If a task is submitted during the quiet period,
      * it is guaranteed to be accepted and the quiet period will start over.
-     *
+     * 优雅停机
      * @param quietPeriod the quiet period as described in the documentation
      * @param timeout     the maximum amount of time to wait until the executor is {@linkplain #shutdown()}
      *                    regardless if a task was submitted during the quiet period
@@ -64,6 +64,27 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
      */
     Future<?> terminationFuture();
 
+
+
+
+
+    /**
+     * Returns one of the {@link EventExecutor}s managed by this {@link EventExecutorGroup}.
+     * 选择一个EventExcutor对象
+     */
+    EventExecutor next();
+
+    @Override
+    Iterator<EventExecutor> iterator();
+    //----------实现ExecutorService接口------------
+    @Override
+    Future<?> submit(Runnable task);
+
+    @Override
+    <T> Future<T> submit(Runnable task, T result);
+
+    @Override
+    <T> Future<T> submit(Callable<T> task);
     /**
      * @deprecated {@link #shutdownGracefully(long, long, TimeUnit)} or {@link #shutdownGracefully()} instead.
      */
@@ -78,23 +99,7 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
     @Deprecated
     List<Runnable> shutdownNow();
 
-    /**
-     * Returns one of the {@link EventExecutor}s managed by this {@link EventExecutorGroup}.
-     */
-    EventExecutor next();
-
-    @Override
-    Iterator<EventExecutor> iterator();
-
-    @Override
-    Future<?> submit(Runnable task);
-
-    @Override
-    <T> Future<T> submit(Runnable task, T result);
-
-    @Override
-    <T> Future<T> submit(Callable<T> task);
-
+    // ---------------实现ScheduledExecutorService 接口---------------
     @Override
     ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit);
 
