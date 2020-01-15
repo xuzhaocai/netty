@@ -95,9 +95,9 @@ public class NioEventLoopGroup extends MultithreadEventLoopGroup {
     }
 
     public NioEventLoopGroup(int nThreads, Executor executor, EventExecutorChooserFactory chooserFactory,
-                             final SelectorProvider selectorProvider,
-                             final SelectStrategyFactory selectStrategyFactory,
-                             final RejectedExecutionHandler rejectedExecutionHandler) {
+                             final SelectorProvider selectorProvider,//选择器selector java nio
+                             final SelectStrategyFactory selectStrategyFactory,//选择策略
+                             final RejectedExecutionHandler rejectedExecutionHandler) {  //拒绝策略
         super(nThreads, executor, chooserFactory, selectorProvider, selectStrategyFactory, rejectedExecutionHandler);
     }
 
@@ -106,7 +106,7 @@ public class NioEventLoopGroup extends MultithreadEventLoopGroup {
      * {@code 50}, which means the event loop will try to spend the same amount of time for I/O as for non-I/O tasks.
      */
     public void setIoRatio(int ioRatio) {
-        for (EventExecutor e: this) {
+        for (EventExecutor e: this) {//设置EventLoop io占用的比例
             ((NioEventLoop) e).setIoRatio(ioRatio);
         }
     }
@@ -115,15 +115,23 @@ public class NioEventLoopGroup extends MultithreadEventLoopGroup {
      * Replaces the current {@link Selector}s of the child event loops with newly created {@link Selector}s to work
      * around the  infamous epoll 100% CPU bug.
      */
-    public void rebuildSelectors() {
+    public void rebuildSelectors() {//jdk 有epoll 100% cpu bug ，当eventloop触发这个bug的时候就会 重建selector
         for (EventExecutor e: this) {
             ((NioEventLoop) e).rebuildSelector();
         }
     }
 
+    /**
+     *
+     * 创建EventLoop对象
+     * @param executor
+     * @param args
+     * @return
+     * @throws Exception
+     */
     @Override
     protected EventLoop newChild(Executor executor, Object... args) throws Exception {
         return new NioEventLoop(this, executor, (SelectorProvider) args[0],
-            ((SelectStrategyFactory) args[1]).newSelectStrategy(), (RejectedExecutionHandler) args[2]);
+            ((SelectStrategyFactory) args[1]).newSelectStrategy(), (RejectedExecutionHandler) args[2]);// 创建NioEventLoop对象
     }
 }

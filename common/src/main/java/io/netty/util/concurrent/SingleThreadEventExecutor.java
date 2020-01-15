@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
  * Abstract base class for {@link OrderedEventExecutor}'s that execute all its submitted tasks in a single thread.
- *
+ * 单线程的Executor抽象类
  */
 public abstract class SingleThreadEventExecutor extends AbstractScheduledEventExecutor implements OrderedEventExecutor {
 
@@ -54,11 +54,11 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(SingleThreadEventExecutor.class);
 
-    private static final int ST_NOT_STARTED = 1;
-    private static final int ST_STARTED = 2;
-    private static final int ST_SHUTTING_DOWN = 3;
-    private static final int ST_SHUTDOWN = 4;
-    private static final int ST_TERMINATED = 5;
+    private static final int ST_NOT_STARTED = 1;  //未开始
+    private static final int ST_STARTED = 2;  // 已经开始
+    private static final int ST_SHUTTING_DOWN = 3;// 正在关闭中
+    private static final int ST_SHUTDOWN = 4;  // 已经关闭
+    private static final int ST_TERMINATED = 5;  // 已经终止
 
     private static final Runnable WAKEUP_TASK = new Runnable() {
         @Override
@@ -72,34 +72,46 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             // Do nothing.
         }
     };
-
+    //字段原子更新器
     private static final AtomicIntegerFieldUpdater<SingleThreadEventExecutor> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(SingleThreadEventExecutor.class, "state");
+
+    //字段原子更新器
     private static final AtomicReferenceFieldUpdater<SingleThreadEventExecutor, ThreadProperties> PROPERTIES_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(
                     SingleThreadEventExecutor.class, ThreadProperties.class, "threadProperties");
-
+    // 等待任务的队列
     private final Queue<Runnable> taskQueue;
-
+    // 线程
     private volatile Thread thread;
     @SuppressWarnings("unused")
+    // 线程属性
     private volatile ThreadProperties threadProperties;
+    // 执行器
     private final Executor executor;
+    // 线程是否已经打断
     private volatile boolean interrupted;
-
+    //优雅关闭
     private final Semaphore threadLock = new Semaphore(0);
     private final Set<Runnable> shutdownHooks = new LinkedHashSet<Runnable>();
+
+    // 添加任务的时候是否唤醒线程
     private final boolean addTaskWakesUp;
+
+    // 最大等待执行任务数
     private final int maxPendingTasks;
+    //拒绝执行处理器
     private final RejectedExecutionHandler rejectedExecutionHandler;
-
+    // 最后执行时间
     private long lastExecutionTime;
-
+    // 状态
     @SuppressWarnings({ "FieldMayBeFinal", "unused" })
     private volatile int state = ST_NOT_STARTED;
-
+    // 优雅关闭
     private volatile long gracefulShutdownQuietPeriod;
+    //优雅关闭超时时间
     private volatile long gracefulShutdownTimeout;
+    // 优雅关闭开始时间
     private long gracefulShutdownStartTime;
 
     private final Promise<?> terminationFuture = new DefaultPromise<Void>(GlobalEventExecutor.INSTANCE);
@@ -181,6 +193,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * implementation that does not support blocking operations at all.
      */
     protected Queue<Runnable> newTaskQueue(int maxPendingTasks) {
+
+
+        // 创建linkedBlockingQueue 队列 ，用来存放等待的任务
         return new LinkedBlockingQueue<Runnable>(maxPendingTasks);
     }
 
@@ -318,14 +333,14 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (task == null) {
             throw new NullPointerException("task");
         }
-        if (!offerTask(task)) {
+        if (!offerTask(task)) {//使用offerTask  添加失败 拒绝任务
             reject(task);
         }
     }
-
+    // 添加task 到队列中，如果添加失败 ，返回false
     final boolean offerTask(Runnable task) {
-        if (isShutdown()) {
-            reject();
+        if (isShutdown()) {// 判断是否shutdown
+            reject();//拒绝任务
         }
         return taskQueue.offer(task);
     }
@@ -487,6 +502,11 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     }
 
+    /**
+     * 判断传入线程是否是EventLoop线程
+     * @param thread
+     * @return
+     */
     @Override
     public boolean inEventLoop(Thread thread) {
         return thread == this.thread;
