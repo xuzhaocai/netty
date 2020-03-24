@@ -301,14 +301,16 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     /**
      * @see Queue#peek()
+     *返回队头任务但是不移除
      */
     protected Runnable peekTask() {
-        assert inEventLoop();
+        assert inEventLoop();//仅允许在EventLoop线程中运行
         return taskQueue.peek();
     }
 
     /**
      * @see Queue#isEmpty()
+     * 判断队列中是否还有任务
      */
     protected boolean hasTasks() {
         assert inEventLoop();
@@ -320,6 +322,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      *
      * <strong>Be aware that this operation may be expensive as it depends on the internal implementation of the
      * SingleThreadEventExecutor. So use it with care!</strong>
+     * 获得队列中的任务数
      */
     public int pendingTasks() {
         return taskQueue.size();
@@ -347,6 +350,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     /**
      * @see Queue#remove(Object)
+     *
+     * 从队列中移除任务
      */
     protected boolean removeTask(Runnable task) {
         if (task == null) {
@@ -493,7 +498,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     protected void cleanup() {
         // NOOP
     }
-
+    //唤醒
     protected void wakeup(boolean inEventLoop) {
         if (!inEventLoop || state == ST_SHUTTING_DOWN) {
             // Use offer as we actually only need this to unblock the thread and if offer fails we do not care as there
@@ -790,18 +795,18 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     @Override
     public void execute(Runnable task) {
-        if (task == null) {
+        if (task == null) {// task 是 null 抛出异常
             throw new NullPointerException("task");
         }
-
+        // 判断是否是EventExecutor线程
         boolean inEventLoop = inEventLoop();
-        addTask(task);
-        if (!inEventLoop) {
-            startThread();
-            if (isShutdown()) {
+        addTask(task);//添加任务
+        if (!inEventLoop) {// 不是EventExecutor线程
+            startThread();// 创建线程
+            if (isShutdown()) {// 如果已经关闭
                 boolean reject = false;
                 try {
-                    if (removeTask(task)) {
+                    if (removeTask(task)) { //如果移除任务
                         reject = true;
                     }
                 } catch (UnsupportedOperationException e) {
@@ -809,12 +814,12 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                     // hope we will be able to pick-up the task before its completely terminated.
                     // In worst case we will log on termination.
                 }
-                if (reject) {
+                if (reject) {// 进行拒绝
                     reject();
                 }
             }
         }
-
+        // 唤醒线程
         if (!addTaskWakesUp && wakesUpForTask(task)) {
             wakeup(inEventLoop);
         }
@@ -889,8 +894,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     /**
      * Offers the task to the associated {@link RejectedExecutionHandler}.
-     *
      * @param task to reject.
+     * 根据拒绝策略拒绝任务
      */
     protected final void reject(Runnable task) {
         rejectedExecutionHandler.rejected(task, this);
@@ -899,9 +904,11 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     // ScheduledExecutorService implementation
 
     private static final long SCHEDULE_PURGE_INTERVAL = TimeUnit.SECONDS.toNanos(1);
-
+    // 启动线程
     private void startThread() {
-        if (state == ST_NOT_STARTED) {
+        if (state == ST_NOT_STARTED) {  // 如果线程状态是没有启动的
+
+            // 使用cas 设置状态
             if (STATE_UPDATER.compareAndSet(this, ST_NOT_STARTED, ST_STARTED)) {
                 try {
                     doStartThread();
@@ -912,23 +919,28 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             }
         }
     }
-
+    // 进行开始线程
     private void doStartThread() {
         assert thread == null;
         executor.execute(new Runnable() {
             @Override
             public void run() {
+
+                // 获取当前线程
                 thread = Thread.currentThread();
-                if (interrupted) {
+                if (interrupted) {  // 判断中断状态
                     thread.interrupt();
                 }
 
-                boolean success = false;
-                updateLastExecutionTime();
+                boolean success = false;  // 是否执行成功的标记
+                updateLastExecutionTime();// 更新最后执行时间
                 try {
+
+                    // 执行任务
                     SingleThreadEventExecutor.this.run();
-                    success = true;
+                    success = true;  // 标记执行成功
                 } catch (Throwable t) {
+                    // 执行失败
                     logger.warn("Unexpected exception from an event executor: ", t);
                 } finally {
                     for (;;) {
