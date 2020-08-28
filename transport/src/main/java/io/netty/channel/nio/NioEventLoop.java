@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class NioEventLoop extends SingleThreadEventLoop {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(NioEventLoop.class);
-
+    // 清理间隔
     private static final int CLEANUP_INTERVAL = 256; // XXX Hard-coded value, but won't need customization.
 
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
@@ -130,25 +130,41 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     private int cancelledKeys;
     private boolean needsToSelectAgain;
 
-    NioEventLoop(NioEventLoopGroup parent, Executor executor, SelectorProvider selectorProvider,
-                 SelectStrategy strategy, RejectedExecutionHandler rejectedExecutionHandler) {
+    NioEventLoop(NioEventLoopGroup parent,// group
+                 Executor executor,   // 线程工厂
+                 SelectorProvider selectorProvider,// SelectorProvider
+                 SelectStrategy strategy, // select 策略
+                 RejectedExecutionHandler rejectedExecutionHandler// 拒绝策略
+    ) {
+
+        /// 先调用父类
         super(parent, executor, false, DEFAULT_MAX_PENDING_TASKS, rejectedExecutionHandler);
+        // 检查selectorProvider
         if (selectorProvider == null) {
             throw new NullPointerException("selectorProvider");
         }
+
+        // 检查strategy
         if (strategy == null) {
             throw new NullPointerException("selectStrategy");
         }
         provider = selectorProvider;
+
+        // 获取Selector
         final SelectorTuple selectorTuple = openSelector();
+
+
+        // 包装过的selector
         selector = selectorTuple.selector;
+        // 没有包装的selector
         unwrappedSelector = selectorTuple.unwrappedSelector;
+        // select 策略
         selectStrategy = strategy;
     }
-
+    // Selector 元组
     private static final class SelectorTuple {
-        final Selector unwrappedSelector;
-        final Selector selector;
+        final Selector unwrappedSelector;// 这个是没有包装的那个Selector
+        final Selector selector; // 这个是经过处理了的Selector
 
         SelectorTuple(Selector unwrappedSelector) {
             this.unwrappedSelector = unwrappedSelector;
@@ -157,19 +173,24 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
         SelectorTuple(Selector unwrappedSelector, Selector selector) {
             this.unwrappedSelector = unwrappedSelector;
+            // 这个selector 是包装的selector
             this.selector = selector;
         }
     }
-
+    // 打开Selector
     private SelectorTuple openSelector() {
         final Selector unwrappedSelector;
         try {
+            // 获得原始的 没有被包装过的Selector，就是使用jdk api
             unwrappedSelector = provider.openSelector();
         } catch (IOException e) {
             throw new ChannelException("failed to open a new selector", e);
         }
 
-        if (DISABLE_KEYSET_OPTIMIZATION) {
+        //TODO 一个需要注意的地方 ， netty 对selector 进行了优化
+        // 缺省是false，缺省状态下是需要对Selector进行优化的
+        if (DISABLE_KEYSET_OPTIMIZATION) {// 如果 io.netty.noKeySetOptimization 参数设置是true的话，
+            // 就直接创建个Selector元组返回了。也就不会再优化了
             return new SelectorTuple(unwrappedSelector);
         }
 
@@ -197,6 +218,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             return new SelectorTuple(unwrappedSelector);
         }
 
+
+
         final Class<?> selectorImplClass = (Class<?>) maybeSelectorImplClass;
         final SelectedSelectionKeySet selectedKeySet = new SelectedSelectionKeySet();
 
@@ -204,8 +227,12 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             @Override
             public Object run() {
                 try {
+
+                    // 获取对应的成员对象
                     Field selectedKeysField = selectorImplClass.getDeclaredField("selectedKeys");
                     Field publicSelectedKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
+
+
 
                     if (PlatformDependent.javaVersion() >= 9 && PlatformDependent.hasUnsafe()) {
                         // Let us try to use sun.misc.Unsafe to replace the SelectionKeySet.
@@ -223,7 +250,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                         }
                         // We could not retrieve the offset, lets try reflection as last-resort.
                     }
-
+                    // 分别设置字段的access
                     Throwable cause = ReflectionUtil.trySetAccessible(selectedKeysField, true);
                     if (cause != null) {
                         return cause;
@@ -233,6 +260,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                         return cause;
                     }
 
+
+
+
+                    // 把unwrappedSelector这个对象的字段给替换了它
                     selectedKeysField.set(unwrappedSelector, selectedKeySet);
                     publicSelectedKeysField.set(unwrappedSelector, selectedKeySet);
                     return null;
@@ -243,15 +274,17 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 }
             }
         });
-
+        // 如果是异常的话，selectedKeys 设置成null 然后还是返回那个没有优化的unwrappedSelector
         if (maybeException instanceof Exception) {
             selectedKeys = null;
             Exception e = (Exception) maybeException;
             logger.trace("failed to instrument a special java.util.Set into: {}", unwrappedSelector, e);
             return new SelectorTuple(unwrappedSelector);
         }
+        // 设置selectedKeys 为 netty自己的keyset
         selectedKeys = selectedKeySet;
         logger.trace("instrumented a special java.util.Set into: {}", unwrappedSelector);
+
         return new SelectorTuple(unwrappedSelector,
                                  new SelectedSelectionKeySetSelector(unwrappedSelector, selectedKeySet));
     }
@@ -262,12 +295,15 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     public SelectorProvider selectorProvider() {
         return provider;
     }
-
+    // 创建任务队列
     @Override
     protected Queue<Runnable> newTaskQueue(int maxPendingTasks) {
         // This event loop never calls takeTask()
-        return maxPendingTasks == Integer.MAX_VALUE ? PlatformDependent.<Runnable>newMpscQueue()
-                                                    : PlatformDependent.<Runnable>newMpscQueue(maxPendingTasks);
+        //TODO 需要看看这个PlatformDependent 是个什么鬼
+        // 队列大小是否是int最大值，也就是默认值
+        return maxPendingTasks == Integer.MAX_VALUE ?
+                PlatformDependent.<Runnable>newMpscQueue() :
+                PlatformDependent.<Runnable>newMpscQueue(maxPendingTasks);
     }
 
     /**

@@ -26,7 +26,7 @@ final class SelectedSelectionKeySetSelector extends Selector {
     private final Selector delegate;
 
     SelectedSelectionKeySetSelector(Selector delegate, SelectedSelectionKeySet selectionKeys) {
-        this.delegate = delegate;
+        this.delegate = delegate;//委托类
         this.selectionKeys = selectionKeys;
     }
 

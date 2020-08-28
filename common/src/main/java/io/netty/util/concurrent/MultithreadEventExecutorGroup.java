@@ -90,20 +90,23 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
         }
         // 创建 EventExecutor数组
         children = new EventExecutor[nThreads];
-
+        // 创建 EventExecutor 对象
         for (int i = 0; i < nThreads; i ++) {
             boolean success = false;//是否创建成功
             try {
+
+                // 进行创建， newChild 需要子类来具体实现
                 children[i] = newChild(executor, args);//创建EventExecutor
                 success = true; //标记创建成功
             } catch (Exception e) {
                 // TODO: Think about if this is a good exception type
                 throw new IllegalStateException("failed to create a child event loop", e);
             } finally {
-                if (!success) {
+                if (!success) {// 如果没有创建成功
                     for (int j = 0; j < i; j ++) {//没有成功全部优雅关闭
                         children[j].shutdownGracefully();
                     }
+
                     //确保所有的EventExecutor全部关闭
                     for (int j = 0; j < i; j ++) {
                         EventExecutor e = children[j];
@@ -166,7 +169,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
     /**
      * Create a new EventExecutor which will later then accessible via the {@link #next()}  method. This method will be
      * called for each thread that will serve this {@link MultithreadEventExecutorGroup}.
-     * 创建EventExecutor实现类对象
+     * 创建EventExecutor实现类对象， 需要子类来实现
      */
     protected abstract EventExecutor newChild(Executor executor, Object... args) throws Exception;
 

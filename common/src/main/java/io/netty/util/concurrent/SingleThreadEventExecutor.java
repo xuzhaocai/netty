@@ -178,10 +178,15 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                                         boolean addTaskWakesUp, int maxPendingTasks,
                                         RejectedExecutionHandler rejectedHandler) {
         super(parent);
+        // 添加任务是否唤醒
         this.addTaskWakesUp = addTaskWakesUp;
+        // 最大等待任务数
         this.maxPendingTasks = Math.max(16, maxPendingTasks);
+
         this.executor = ObjectUtil.checkNotNull(executor, "executor");
+        // 任务队列
         taskQueue = newTaskQueue(this.maxPendingTasks);
+        // 检验拒绝策略
         rejectedExecutionHandler = ObjectUtil.checkNotNull(rejectedHandler, "rejectedHandler");
     }
 
@@ -201,8 +206,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * 如果子类有更好的队列选择的话，可以重写这个方法  NioEventLoop就重写了这个方法
      */
     protected Queue<Runnable> newTaskQueue(int maxPendingTasks) {
-
-
+        // maxPendingTasks 缺省是int的最大值
         // 创建linkedBlockingQueue 队列 ，用来存放等待的任务
         return new LinkedBlockingQueue<Runnable>(maxPendingTasks);
     }

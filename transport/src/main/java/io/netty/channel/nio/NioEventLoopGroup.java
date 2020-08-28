@@ -135,7 +135,14 @@ public class NioEventLoopGroup extends MultithreadEventLoopGroup {
      */
     @Override
     protected EventLoop newChild(Executor executor, Object... args) throws Exception {
-        return new NioEventLoop(this, executor, (SelectorProvider) args[0],
-            ((SelectStrategyFactory) args[1]).newSelectStrategy(), (RejectedExecutionHandler) args[2]);// 创建NioEventLoop对象
+
+        // 这里就是创建 NioEventLoop 对象
+        return new NioEventLoop(this,// group
+                executor,// 线程工厂
+                (SelectorProvider) args[0],//SelectorProvider
+            ((SelectStrategyFactory) args[1]).newSelectStrategy(),//select 策略 ，通过工厂来获得 ，使用默认的DefaultSelectStrategy
+                (RejectedExecutionHandler) args[2]);// 拒绝策略
+
+        // 创建NioEventLoop对象
     }
 }

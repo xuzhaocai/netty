@@ -22,14 +22,14 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
-
+    //放selectionKey的数组
     SelectionKey[] keys;
-    int size;
+    int size;// size
 
-    SelectedSelectionKeySet() {
+    SelectedSelectionKeySet() {// 初始化就先来1024个
         keys = new SelectionKey[1024];
     }
-
+    // 添加方法
     @Override
     public boolean add(SelectionKey o) {
         if (o == null) {
@@ -37,7 +37,8 @@ final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
         }
 
         keys[size++] = o;
-        if (size == keys.length) {
+        // 如果数组的大小与实际存了的大小相等的话
+        if (size == keys.length) {// 进行扩容
             increaseCapacity();
         }
 
@@ -55,7 +56,7 @@ final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
     }
 
     @Override
-    public int size() {
+    public int size() {// 大小
         return size;
     }
 
@@ -94,7 +95,9 @@ final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
     }
 
     private void increaseCapacity() {
+        // 重新创建个数组，新数组大小 是原来的2倍，左移一位就是 *2
         SelectionKey[] newKeys = new SelectionKey[keys.length << 1];
+        // 数组copy
         System.arraycopy(keys, 0, newKeys, 0, size);
         keys = newKeys;
     }

@@ -35,7 +35,7 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
 
     static final long DEFAULT_SHUTDOWN_QUIET_PERIOD = 2;
     static final long DEFAULT_SHUTDOWN_TIMEOUT = 15;
-    // EventExecutor组
+    // EventExecutor组  ，就是自己属于哪个组，当年谁创建的他
     private final EventExecutorGroup parent;
     //EventExecutor 数组。只包含自己，用于 {@link #iterator()}
     private final Collection<EventExecutor> selfCollection = Collections.<EventExecutor>singleton(this);
