@@ -30,7 +30,7 @@ public final class NettyRuntime {
      * Holder class for available processors to enable testing.
      */
     static class AvailableProcessorsHolder {
-
+        // 可用核心数
         private int availableProcessors;
 
         /**
@@ -41,7 +41,9 @@ public final class NettyRuntime {
          * @throws IllegalStateException    if the number of available processors is already configured
          */
         synchronized void setAvailableProcessors(final int availableProcessors) {
+            // 检测参数中核心数是否小于等于0
             ObjectUtil.checkPositive(availableProcessors, "availableProcessors");
+            // 这种情况不会发生
             if (this.availableProcessors != 0) {
                 final String message = String.format(
                         Locale.ROOT,
@@ -50,6 +52,7 @@ public final class NettyRuntime {
                         availableProcessors);
                 throw new IllegalStateException(message);
             }
+            // 设置给自己的变量
             this.availableProcessors = availableProcessors;
         }
 
@@ -62,11 +65,16 @@ public final class NettyRuntime {
          */
         @SuppressForbidden(reason = "to obtain default number of available processors")
         synchronized int availableProcessors() {
-            if (this.availableProcessors == 0) {
+            if (this.availableProcessors == 0) {// 如果可用的Processors 是0
                 final int availableProcessors =
+
+                        // 这里就是获取系统级别的参数io.netty.availableProcessors
                         SystemPropertyUtil.getInt(
                                 "io.netty.availableProcessors",
+                                // 缺省是系统的核心数
                                 Runtime.getRuntime().availableProcessors());
+
+                // 将 可用核心数设置到
                 setAvailableProcessors(availableProcessors);
             }
             return this.availableProcessors;

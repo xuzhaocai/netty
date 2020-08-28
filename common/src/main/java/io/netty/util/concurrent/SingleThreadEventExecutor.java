@@ -60,7 +60,14 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     private static final int ST_SHUTDOWN = 4;  // 已经关闭
     private static final int ST_TERMINATED = 5;  // 已经终止
 
+
+
+    //这是一个空的 Runnable 实现类。仅仅用于唤醒基于 taskQueue 阻塞拉取的 EventLoop 实现类。
+    //NioEventLoop中会重写这个
     private static final Runnable WAKEUP_TASK = new Runnable() {
+
+
+
         @Override
         public void run() {
             // Do nothing.
@@ -191,6 +198,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * {@link LinkedBlockingQueue} but if your sub-class of {@link SingleThreadEventExecutor} will not do any blocking
      * calls on the this {@link Queue} it may make sense to {@code @Override} this and return some more performant
      * implementation that does not support blocking operations at all.
+     * 如果子类有更好的队列选择的话，可以重写这个方法  NioEventLoop就重写了这个方法
      */
     protected Queue<Runnable> newTaskQueue(int maxPendingTasks) {
 
@@ -201,6 +209,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     /**
      * Interrupt the current running {@link Thread}.
+     * 打断EventLoop线程， 因为 EventLoop 的线程是延迟启动，所以可能 thread 并未创建，
+     * 此时通过 interrupted 标记打断。之后在 #startThread() 方法中，
+     * 创建完线程后，再进行打断，也就是说，“延迟打断”。
      */
     protected void interruptThread() {
         Thread currentThread = thread;

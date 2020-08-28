@@ -15,7 +15,7 @@
  */
 package io.netty.channel;
 
-/**
+/**默认select策略工厂
  * Factory which uses the default select strategy.
  */
 public final class DefaultSelectStrategyFactory implements SelectStrategyFactory {

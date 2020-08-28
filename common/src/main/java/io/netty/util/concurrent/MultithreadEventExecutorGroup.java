@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
     /**
      * EventExecutor执行器数组
+     * 也就是一个组下面多个 EventExecutor
      */
     private final EventExecutor[] children;
 
@@ -77,11 +78,14 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      */
     protected MultithreadEventExecutorGroup(int nThreads, Executor executor,
                                             EventExecutorChooserFactory chooserFactory, Object... args) {
+
+        // 验证线程 线程小于0 抛出异常
         if (nThreads <= 0) {//验证线程
             throw new IllegalArgumentException(String.format("nThreads: %d (expected: > 0)", nThreads));
         }
-        // 创建执行器
+        // 创建执行器 如果是null的话，使用默认的
         if (executor == null) {
+            // 创建一个默认的线程工厂
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
         // 创建 EventExecutor数组

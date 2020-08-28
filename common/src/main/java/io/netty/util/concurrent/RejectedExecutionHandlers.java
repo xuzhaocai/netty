@@ -58,7 +58,6 @@ public final class RejectedExecutionHandlers {
         ObjectUtil.checkPositive(retries, "retries");
         final long backOffNanos = unit.toNanos(backoffAmount);  // 按照单位换算成 纳秒
         return new RejectedExecutionHandler() {
-
             // 循环多次尝试添加到队列中
             @Override
             public void rejected(Runnable task, SingleThreadEventExecutor executor) {

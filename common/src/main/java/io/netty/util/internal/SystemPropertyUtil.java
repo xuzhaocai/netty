@@ -56,6 +56,8 @@ public final class SystemPropertyUtil {
      *         specified property is not allowed.
      */
     public static String get(final String key, String def) {
+
+        //验证key
         if (key == null) {
             throw new NullPointerException("key");
         }
@@ -133,10 +135,11 @@ public final class SystemPropertyUtil {
      */
     public static int getInt(String key, int def) {
         String value = get(key);
+        // 如果是null 就返回默认的
         if (value == null) {
             return def;
         }
-
+        // 处理 ，将str 解析成integer
         value = value.trim();
         try {
             return Integer.parseInt(value);

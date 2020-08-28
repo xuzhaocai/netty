@@ -15,7 +15,7 @@
  */
 package io.netty.channel;
 
-/**
+/**select策略工厂
  * Factory that creates a new {@link SelectStrategy} every time.
  */
 public interface SelectStrategyFactory {
