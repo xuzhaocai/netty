@@ -54,8 +54,8 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     private static final ClosedChannelException DO_CLOSE_CLOSED_CHANNEL_EXCEPTION = ThrowableUtil.unknownStackTrace(
             new ClosedChannelException(), AbstractNioChannel.class, "doClose()");
 
-    private final SelectableChannel ch;
-    protected final int readInterestOp;
+    private final SelectableChannel ch;// jdk channel
+    protected final int readInterestOp;// 操作
     volatile SelectionKey selectionKey;
     boolean readPending;
     private final Runnable clearReadPendingRunnable = new Runnable() {
@@ -85,8 +85,12 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         this.ch = ch;
         this.readInterestOp = readInterestOp;
         try {
+
+            // 设置blocking 是false
             ch.configureBlocking(false);
         } catch (IOException e) {
+
+            // 异常就关闭，并抛出异常
             try {
                 ch.close();
             } catch (IOException e2) {

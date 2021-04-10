@@ -48,13 +48,17 @@ import java.util.Map;
  * transports such as datagram (UDP).</p>
  */
 public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C extends Channel> implements Cloneable {
-
+    // boss
     volatile EventLoopGroup group;
     @SuppressWarnings("deprecation")
     private volatile ChannelFactory<? extends C> channelFactory;
     private volatile SocketAddress localAddress;
+
+    // 这里面放了一些参数 SO_BACKLOG 等
     private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<ChannelOption<?>, Object>();
     private final Map<AttributeKey<?>, Object> attrs = new LinkedHashMap<AttributeKey<?>, Object>();
+
+    // 这个就是设置的handler
     private volatile ChannelHandler handler;
 
     AbstractBootstrap() {
@@ -103,6 +107,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         if (channelClass == null) {
             throw new NullPointerException("channelClass");
         }
+
+        // 创建channel工厂
         return channelFactory(new ReflectiveChannelFactory<C>(channelClass));
     }
 
@@ -117,7 +123,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         if (this.channelFactory != null) {
             throw new IllegalStateException("channelFactory set already");
         }
-
+        // 设置channel工厂
         this.channelFactory = channelFactory;
         return self();
     }
@@ -269,6 +275,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
 
     /**
      * Create a new {@link Channel} and bind it.
+     *
+     * 绑定端口
      */
     public ChannelFuture bind(SocketAddress localAddress) {
         validate();
@@ -279,6 +287,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     private ChannelFuture doBind(final SocketAddress localAddress) {
+
+        // 初始化 && 注册
         final ChannelFuture regFuture = initAndRegister();
         final Channel channel = regFuture.channel();
         if (regFuture.cause() != null) {
@@ -317,7 +327,11 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
+
+            // 创建一个channel
             channel = channelFactory.newChannel();
+
+            // 初始化
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
@@ -437,21 +451,22 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     final Map<AttributeKey<?>, Object> attrs() {
         return copiedMap(attrs);
     }
-
+    // 往channel中设置参数
     static void setChannelOptions(
             Channel channel, Map<ChannelOption<?>, Object> options, InternalLogger logger) {
         for (Map.Entry<ChannelOption<?>, Object> e: options.entrySet()) {
+            // 设置参数
             setChannelOption(channel, e.getKey(), e.getValue(), logger);
         }
     }
-
+    // 设置参数
     static void setChannelOptions(
             Channel channel, Map.Entry<ChannelOption<?>, Object>[] options, InternalLogger logger) {
         for (Map.Entry<ChannelOption<?>, Object> e: options) {
             setChannelOption(channel, e.getKey(), e.getValue(), logger);
         }
     }
-
+    //设置参数
     @SuppressWarnings("unchecked")
     private static void setChannelOption(
             Channel channel, ChannelOption<?> option, Object value, InternalLogger logger) {

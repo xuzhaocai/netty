@@ -47,7 +47,11 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     private final Map<ChannelOption<?>, Object> childOptions = new LinkedHashMap<ChannelOption<?>, Object>();
     private final Map<AttributeKey<?>, Object> childAttrs = new LinkedHashMap<AttributeKey<?>, Object>();
     private final ServerBootstrapConfig config = new ServerBootstrapConfig(this);
+
+    // childGroup组
     private volatile EventLoopGroup childGroup;
+
+    // 设置的childHandler
     private volatile ChannelHandler childHandler;
 
     public ServerBootstrap() { }
@@ -137,10 +141,19 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         return this;
     }
 
+    /**
+     * 初始化
+     * @param channel
+     * @throws Exception
+     */
     @Override
     void init(Channel channel) throws Exception {
+
+        // 获取参数
         final Map<ChannelOption<?>, Object> options = options0();
         synchronized (options) {
+
+            // 往channel中设置参数
             setChannelOptions(channel, options, logger);
         }
 
