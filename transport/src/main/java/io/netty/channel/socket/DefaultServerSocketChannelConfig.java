@@ -37,7 +37,7 @@ import static io.netty.channel.ChannelOption.SO_REUSEADDR;
  */
 public class DefaultServerSocketChannelConfig extends DefaultChannelConfig
                                               implements ServerSocketChannelConfig {
-
+    // jdk 的socketChannel
     protected final ServerSocket javaSocket;
     private volatile int backlog = NetUtil.SOMAXCONN;
 

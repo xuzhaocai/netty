@@ -351,6 +351,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (task == null) {
             throw new NullPointerException("task");
         }
+
+        // 如果添加失败，就拒绝
         if (!offerTask(task)) {//使用offerTask  添加失败 拒绝任务
             reject(task);
         }
@@ -360,6 +362,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (isShutdown()) {// 判断是否shutdown
             reject();//拒绝任务
         }
+        // 向队列尾部添加一个任务
         return taskQueue.offer(task);
     }
 
@@ -435,7 +438,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         final long deadline = ScheduledFutureTask.nanoTime() + timeoutNanos;
         long runTasks = 0;
         long lastExecutionTime;
-        for (;;) {
+        for (;;) {// 执行任务
             safeExecute(task);
 
             runTasks ++;
@@ -808,6 +811,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         return isTerminated();
     }
 
+    /**
+     * 执行任务的方法
+     * @param task
+     */
     @Override
     public void execute(Runnable task) {
         if (task == null) {// task 是 null 抛出异常
@@ -815,9 +822,12 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
         // 判断是否是EventExecutor线程
         boolean inEventLoop = inEventLoop();
+
+        // 添加队列中，这个是添加到队列的尾部
         addTask(task);//添加任务
+
         if (!inEventLoop) {// 不是EventExecutor线程
-            startThread();// 创建线程
+            startThread();// 创建线程，创建完eventloop线程之后，别的线程任务就可以完成了
             if (isShutdown()) {// 如果已经关闭
                 boolean reject = false;
                 try {
@@ -941,7 +951,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             @Override
             public void run() {
 
-                // 获取当前线程
+                // 获取当前线程，然后赋值给该executor
                 thread = Thread.currentThread();
                 if (interrupted) {  // 判断中断状态
                     thread.interrupt();

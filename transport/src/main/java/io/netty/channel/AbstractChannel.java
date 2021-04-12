@@ -79,10 +79,10 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
      *        the parent of this channel. {@code null} if there's no parent.
      */
     protected AbstractChannel(Channel parent) {
-        this.parent = parent;
-        id = newId();
-        unsafe = newUnsafe();
-        pipeline = newChannelPipeline();
+        this.parent = parent;// parent
+        id = newId();// 生成一个id
+        unsafe = newUnsafe();// 生成一个unsafe
+        pipeline = newChannelPipeline();// 创建一个pipeline
     }
 
     /**
@@ -112,6 +112,8 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
     }
 
     /**
+     *
+     * 创建一个pipeline
      * Returns a new {@link DefaultChannelPipeline} instance.
      */
     protected DefaultChannelPipeline newChannelPipeline() {
@@ -255,6 +257,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
     @Override
     public ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise) {
+        // 调用pipeline的 bind方法
         return pipeline.bind(localAddress, promise);
     }
 
@@ -282,7 +285,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
     public ChannelFuture deregister(ChannelPromise promise) {
         return pipeline.deregister(promise);
     }
-
+    // read ，走的是pipeline
     @Override
     public Channel read() {
         pipeline.read();
@@ -459,11 +462,18 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             return remoteAddress0();
         }
 
+        /**
+         * 注册方法
+         * @param eventLoop
+         * @param promise
+         */
         @Override
         public final void register(EventLoop eventLoop, final ChannelPromise promise) {
             if (eventLoop == null) {
                 throw new NullPointerException("eventLoop");
             }
+
+            // 如果已经注册过了
             if (isRegistered()) {
                 promise.setFailure(new IllegalStateException("registered to an event loop already"));
                 return;
@@ -473,16 +483,20 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                         new IllegalStateException("incompatible event loop type: " + eventLoop.getClass().getName()));
                 return;
             }
-
+            // 给channel上绑定一个线程
             AbstractChannel.this.eventLoop = eventLoop;
-
+            // 如果现在运行这个代码的线程是 eventloop这个线程的话，直接注册
             if (eventLoop.inEventLoop()) {
                 register0(promise);
             } else {
+
+                // 如果不是的话，就创建任务扔到eventloop中
                 try {
+                    // 比如说是main线程运行的
                     eventLoop.execute(new Runnable() {
                         @Override
                         public void run() {
+                            // 进行注册
                             register0(promise);
                         }
                     });
@@ -496,7 +510,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 }
             }
         }
-
+        // 这个任务就是eventloop线程运行的了
         private void register0(ChannelPromise promise) {
             try {
                 // check if the channel is still open as it could be closed in the mean time when the register
@@ -505,18 +519,28 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                     return;
                 }
                 boolean firstRegistration = neverRegistered;
+
+                // 进行注册
                 doRegister();
                 neverRegistered = false;
+
+                // 重置注册标识
                 registered = true;
 
                 // Ensure we call handlerAdded(...) before we actually notify the promise. This is needed as the
                 // user may already fire events through the pipeline in the ChannelFutureListener.
-                pipeline.invokeHandlerAddedIfNeeded();
 
+                // 告诉所以添加的handler
+                pipeline.invokeHandlerAddedIfNeeded();
+                // 设置成功标识
                 safeSetSuccess(promise);
+
+                // channel已经注册，执行handler的registered操作
                 pipeline.fireChannelRegistered();
                 // Only fire a channelActive if the channel has never been registered. This prevents firing
                 // multiple channel actives if the channel is deregistered and re-registered.
+
+                // channel是isBound
                 if (isActive()) {
                     if (firstRegistration) {
                         pipeline.fireChannelActive();
@@ -538,12 +562,12 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
         @Override
         public final void bind(final SocketAddress localAddress, final ChannelPromise promise) {
-            assertEventLoop();
+            assertEventLoop();// 断言是不是eventloop
 
             if (!promise.setUncancellable() || !ensureOpen(promise)) {
                 return;
             }
-
+            //broadcast广播
             // See: https://github.com/netty/netty/issues/576
             if (Boolean.TRUE.equals(config().getOption(ChannelOption.SO_BROADCAST)) &&
                 localAddress instanceof InetSocketAddress &&
@@ -569,12 +593,12 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             if (!wasActive && isActive()) {
                 invokeLater(new Runnable() {
                     @Override
-                    public void run() {
+                    public void run() {// channel active
                         pipeline.fireChannelActive();
                     }
                 });
             }
-
+            //设置成功标识
             safeSetSuccess(promise);
         }
 
@@ -838,7 +862,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 }
             });
         }
-
+        // 开始read
         @Override
         public final void beginRead() {
             assertEventLoop();

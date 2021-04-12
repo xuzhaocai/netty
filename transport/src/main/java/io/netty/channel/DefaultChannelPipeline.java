@@ -63,8 +63,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                     DefaultChannelPipeline.class, MessageSizeEstimator.Handle.class, "estimatorHandle");
     final AbstractChannelHandlerContext head;
     final AbstractChannelHandlerContext tail;
-
+    // channel
     private final Channel channel;
+
+
     private final ChannelFuture succeededFuture;
     private final VoidChannelPromise voidPromise;
     private final boolean touch = ResourceLeakDetector.isEnabled();
@@ -90,13 +92,17 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     private boolean registered;
 
     protected DefaultChannelPipeline(Channel channel) {
+
         this.channel = ObjectUtil.checkNotNull(channel, "channel");
+
+        // 创建一个successFuture
         succeededFuture = new SucceededChannelFuture(channel, null);
         voidPromise =  new VoidChannelPromise(channel, true);
-
+        // 尾
         tail = new TailContext(this);
+        //头，这个很重要，里面有个unsafe的对象
         head = new HeadContext(this);
-
+        // 组成一个链表
         head.next = tail;
         tail.prev = head;
     }
@@ -201,20 +207,35 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return addLast(null, name, handler);
     }
 
+    /**
+     * 往队尾添加
+     * @param group    the {@link EventExecutorGroup} which will be used to execute the {@link ChannelHandler}
+     *                 methods
+     * @param name     the name of the handler to append
+     * @param handler  the handler to append
+     *
+     * @return
+     */
     @Override
     public final ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler) {
         final AbstractChannelHandlerContext newCtx;
         synchronized (this) {
             checkMultiplicity(handler);
-
+            // 创建一个context
             newCtx = newContext(group, filterName(name, handler), handler);
 
+
+            // 真实往链表里面添加handler ，添加位置是 tail 的前面
             addLast0(newCtx);
 
             // If the registered is false it means that the channel was not registered on an eventloop yet.
             // In this case we add the context to the pipeline and add a task that will call
             // ChannelHandler.handlerAdded(...) once the channel is registered.
+
+            // 第一次肯定是没有注册的
             if (!registered) {
+
+                // 状态转换
                 newCtx.setAddPending();
                 callHandlerCallbackLater(newCtx, true);
                 return this;
@@ -235,9 +256,12 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         callHandlerAdded0(newCtx);
         return this;
     }
-
+    // 就是往tail前面添加一个handler
     private void addLast0(AbstractChannelHandlerContext newCtx) {
+
+        // 取出tail的前一个
         AbstractChannelHandlerContext prev = tail.prev;
+
         newCtx.prev = prev;
         newCtx.next = tail;
         prev.next = newCtx;
@@ -391,11 +415,22 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return addLast(null, handler);
     }
 
+    /**
+     * 从后面添加handler
+     * @param handlers  the handlers to insert last
+     * @return
+     */
     @Override
     public final ChannelPipeline addLast(ChannelHandler... handlers) {
         return addLast(null, handlers);
     }
 
+    /**
+     * 往队尾添加一个
+     * @param executor
+     * @param handlers  the handlers to insert last
+     * @return
+     */
     @Override
     public final ChannelPipeline addLast(EventExecutorGroup executor, ChannelHandler... handlers) {
         if (handlers == null) {
@@ -1016,6 +1051,8 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
     @Override
     public final ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise) {
+
+        // 从tail开始
         return tail.bind(localAddress, promise);
     }
 
@@ -1047,7 +1084,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
     @Override
     public final ChannelPipeline read() {
-        tail.read();
+        tail.read();// read 是从tail开始read
         return this;
     }
 
@@ -1140,6 +1177,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
     }
 
+    /**
+     * 告诉所有已经添加的handler
+     */
     private void callHandlerAddedForAllHandlers() {
         final PendingHandlerCallback pendingHandlerCallbackHead;
         synchronized (this) {
@@ -1156,6 +1196,8 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         // This must happen outside of the synchronized(...) block as otherwise handlerAdded(...) may be called while
         // holding the lock and so produce a deadlock if handlerAdded(...) will try to add another handler from outside
         // the EventLoop.
+
+        // 执行
         PendingHandlerCallback task = pendingHandlerCallbackHead;
         while (task != null) {
             task.execute();
@@ -1324,10 +1366,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             onUnhandledInboundChannelReadComplete();
         }
     }
-
+    // 头context， 既是inbound 也是outbound超级重要
     final class HeadContext extends AbstractChannelHandlerContext
             implements ChannelOutboundHandler, ChannelInboundHandler {
-
+        // unsafe 超级重要
         private final Unsafe unsafe;
 
         HeadContext(DefaultChannelPipeline pipeline) {
@@ -1420,7 +1462,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             ctx.fireChannelActive();
-
+            // 如果允许自动read 的话，这个时候就会自动read
             readIfIsAutoRead();
         }
 

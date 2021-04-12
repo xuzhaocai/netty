@@ -206,7 +206,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
             });
         }
     }
-
+    // channel active
     private void invokeChannelActive() {
         if (invokeHandler()) {
             try {
@@ -941,10 +941,10 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
         AbstractChannelHandlerContext ctx = this;
         do {
             ctx = ctx.next;
-        } while (!ctx.inbound);
+        } while (!ctx.inbound);// 这里是找inbound 的，如果不是的话，它会接着往下循环找。
         return ctx;
     }
-
+    // 从链条中找一个outbound，就是往前找，然后没有的话还是往前找
     private AbstractChannelHandlerContext findContextOutbound() {
         AbstractChannelHandlerContext ctx = this;
         do {

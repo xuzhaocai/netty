@@ -46,7 +46,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
     protected AbstractNioUnsafe newUnsafe() {
         return new NioMessageUnsafe();
     }
-
+    // 进行读取
     @Override
     protected void doBeginRead() throws Exception {
         if (inputShutdown) {

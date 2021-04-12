@@ -454,8 +454,13 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
     }
 
+    /**
+     * 运行
+     */
     @Override
     protected void run() {
+
+        // 死循环
         for (;;) {
             try {
                 try {
@@ -513,20 +518,28 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
                 cancelledKeys = 0;
                 needsToSelectAgain = false;
+
+                // io占比
                 final int ioRatio = this.ioRatio;
                 if (ioRatio == 100) {
-                    try {
+                    try {// 处理io事件
                         processSelectedKeys();
                     } finally {
                         // Ensure we always run tasks.
                         runAllTasks();
                     }
                 } else {
+
+                    // io开始时间
                     final long ioStartTime = System.nanoTime();
                     try {
+
+                        // 处理事件
                         processSelectedKeys();
                     } finally {
                         // Ensure we always run tasks.
+
+                        // 计算出来io使用的时间，然后好根据占比，计算出来运行任务需要的时间
                         final long ioTime = System.nanoTime() - ioStartTime;
                         runAllTasks(ioTime * (100 - ioRatio) / ioRatio);
                     }

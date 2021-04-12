@@ -439,7 +439,7 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
     protected AbstractNioUnsafe newUnsafe() {
         return new NioSocketChannelUnsafe();
     }
-
+    // nio
     private final class NioSocketChannelUnsafe extends NioByteUnsafe {
         @Override
         protected Executor prepareToClose() {

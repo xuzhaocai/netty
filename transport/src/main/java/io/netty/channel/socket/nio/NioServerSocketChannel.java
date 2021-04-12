@@ -46,6 +46,9 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
                              implements io.netty.channel.socket.ServerSocketChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
+
+
+    // selector provider
     private static final SelectorProvider DEFAULT_SELECTOR_PROVIDER = SelectorProvider.provider();
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(NioServerSocketChannel.class);
@@ -135,12 +138,12 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
     protected SocketAddress localAddress0() {
         return SocketUtils.localSocketAddress(javaChannel().socket());
     }
-
+    // 进行bind
     @Override
     protected void doBind(SocketAddress localAddress) throws Exception {
         if (PlatformDependent.javaVersion() >= 7) {
-            javaChannel().bind(localAddress, config.getBacklog());
-        } else {
+            javaChannel().bind(localAddress, config.getBacklog());// 真正的bind
+        } else {//jdk 7之前的版本
             javaChannel().socket().bind(localAddress, config.getBacklog());
         }
     }
