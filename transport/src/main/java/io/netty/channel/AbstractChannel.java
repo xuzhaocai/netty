@@ -504,7 +504,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                     logger.warn(
                             "Force-closing a channel whose registration task was not accepted by an event loop: {}",
                             AbstractChannel.this, t);
-                    closeForcibly();
+                    closeForcibly();// 强制关闭
                     closeFuture.setClosed();
                     safeSetFailure(promise, t);
                 }

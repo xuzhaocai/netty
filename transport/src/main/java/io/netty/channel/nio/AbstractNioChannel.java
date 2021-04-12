@@ -328,15 +328,19 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             closeIfClosed();
         }
 
+        /**
+         * 完成连接的创建
+         */
         @Override
         public final void finishConnect() {
             // Note this method is invoked by the event loop only if the connection attempt was
             // neither cancelled nor timed out.
-
+            // 断言是不是在EventLoop线程中
             assert eventLoop().inEventLoop();
 
             try {
                 boolean wasActive = isActive();
+                // 进行连接
                 doFinishConnect();
                 fulfillConnectPromise(connectPromise, wasActive);
             } catch (Throwable t) {

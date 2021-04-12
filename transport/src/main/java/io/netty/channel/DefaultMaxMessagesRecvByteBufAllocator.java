@@ -105,7 +105,7 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
         @Override
         public void reset(ChannelConfig config) {
             this.config = config;
-            maxMessagePerRead = maxMessagesPerRead();
+            maxMessagePerRead = maxMessagesPerRead();//16
             totalMessages = totalBytesRead = 0;
         }
 

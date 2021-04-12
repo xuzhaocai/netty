@@ -574,9 +574,9 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     }
 
     private void processSelectedKeys() {
-        if (selectedKeys != null) {
+        if (selectedKeys != null) {// 这个是使用的netty增强过的的
             processSelectedKeysOptimized();
-        } else {
+        } else {// 使用jdk自己的
             processSelectedKeysPlain(selector.selectedKeys());
         }
     }
@@ -623,6 +623,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             i.remove();
 
             if (a instanceof AbstractNioChannel) {
+                //这个事件，肯定是注册到selector上的channel才有的，注册到channel的时候，都会返回一个key
                 processSelectedKey(k, (AbstractNioChannel) a);
             } else {
                 @SuppressWarnings("unchecked")
@@ -654,7 +655,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             // null out entry in the array to allow to have it GC'ed once the Channel close
             // See https://github.com/netty/netty/issues/2363
             selectedKeys.keys[i] = null;
-
+            // 获取key中塞入的附加信息，这个附加信息就是channel
             final Object a = k.attachment();
 
             if (a instanceof AbstractNioChannel) {
@@ -677,6 +678,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     }
 
     private void processSelectedKey(SelectionKey k, AbstractNioChannel ch) {
+
+        //获取channel下面的unsafe
         final AbstractNioChannel.NioUnsafe unsafe = ch.unsafe();
         if (!k.isValid()) {
             final EventLoop eventLoop;
@@ -702,6 +705,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
         try {
             int readyOps = k.readyOps();
+            // connect事件
             // We first need to call finishConnect() before try to trigger a read(...) or write(...) as otherwise
             // the NIO JDK channel implementation may throw a NotYetConnectedException.
             if ((readyOps & SelectionKey.OP_CONNECT) != 0) {
@@ -709,17 +713,18 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 // See https://github.com/netty/netty/issues/924
                 int ops = k.interestOps();
                 ops &= ~SelectionKey.OP_CONNECT;
+                // 重新设置感兴趣的事件
                 k.interestOps(ops);
-
+                // 完成连接的创建
                 unsafe.finishConnect();
             }
-
+            // write 事件处理
             // Process OP_WRITE first as we may be able to write some queued buffers and so free memory.
             if ((readyOps & SelectionKey.OP_WRITE) != 0) {
                 // Call forceFlush which will also take care of clear the OP_WRITE once there is nothing left to write
                 ch.unsafe().forceFlush();
             }
-
+            // read 事件 与 accept事件，新建的连接的时候肯定先是accept
             // Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead
             // to a spin loop
             if ((readyOps & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0 || readyOps == 0) {
@@ -865,7 +870,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                         selectCnt >= SELECTOR_AUTO_REBUILD_THRESHOLD) {
                     // The code exists in an extra method to ensure the method is not too big to inline as this
                     // branch is not very likely to get hit very frequently.
-                    selector = selectRebuildSelector(selectCnt);
+                    selector = selectRebuildSelector(selectCnt);// rebuild selector 这个就是为了解决jdk selector 100%cpu bug
                     selectCnt = 1;
                     break;
                 }

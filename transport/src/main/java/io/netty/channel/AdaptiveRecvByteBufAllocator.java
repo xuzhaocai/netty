@@ -96,11 +96,11 @@ public class AdaptiveRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufA
         private boolean decreaseNow;
 
         public HandleImpl(int minIndex, int maxIndex, int initial) {
-            this.minIndex = minIndex;
-            this.maxIndex = maxIndex;
+            this.minIndex = minIndex;//3
+            this.maxIndex = maxIndex;//38
 
-            index = getSizeTableIndex(initial);
-            nextReceiveBufferSize = SIZE_TABLE[index];
+            index = getSizeTableIndex(initial);//32
+            nextReceiveBufferSize = SIZE_TABLE[index];//1024
         }
 
         @Override
